@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using ApiHw.Models;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using System.IO;
 
 namespace ApiHw.Controllers
 {
@@ -17,22 +19,10 @@ namespace ApiHw.Controllers
         {
             OrderRepository = orderRespository;
         }
-
-
-        //[HttpPost]
-        //public Order GetPrices([FromBody] Order order)
-        //{
-        //    return order;
-        //}
-
-        
+       
         [HttpPost]
         public IEnumerable<OrderPrices> GetPrices([FromBody] List<Order> orders)
         {
-            //List<Order> orders = new List<Order>();
-
-            //orders.Add(new Order { order_date = jorders.})
-            //var ordersArray = jorders.ToObject<List<OrderPrices>>();
 
             List<OrderPrices> orderPrices = new List<OrderPrices>();
             foreach (var order in orders)
@@ -41,7 +31,7 @@ namespace ApiHw.Controllers
                 foreach(var orderItem in order.order_items)
                 {
                     // calculate price for the item
-                    op.OrderItemPrices.Add(new OrderItemPrices { ItemName = orderItem.type, Price = 5.00 });
+                    op.OrderItemPrices.Add(new OrderItemPrices { ItemName = orderItem.type, Price = LookupFee(orderItem.type, orderItem.pages) });
                 }
 
                 op.OrderTotal = op.OrderItemPrices.Sum(x => x.Price);
@@ -50,6 +40,22 @@ namespace ApiHw.Controllers
 
             return orderPrices;
 
+        }
+
+        private decimal LookupFee(string itemType, int pages)
+        {
+            JsonSerializer serializer = new JsonSerializer();            
+            
+
+            using (StreamReader reader = System.IO.File.OpenText(@".\fees.json"))
+            using(JsonReader jr = new JsonTextReader(reader))
+            {
+                List<Fees> fees = serializer.Deserialize<List<Fees>>(jr);
+                var specificType = fees.FirstOrDefault(x => x.order_item_type == itemType);
+                var flatFees = specificType.fees.Where(x => x.type == "flat").Sum(x => x.amount);
+                var perPageFees = (pages > 1) ? specificType.fees.Where(x => x.type == "per-page").Sum(x => x.amount) * (pages - 1) : 0.0m;
+                return flatFees + perPageFees;
+            }
         }
         
 

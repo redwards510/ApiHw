@@ -9,7 +9,9 @@ namespace ApiHw.Models
     public class Fees
     {
         public string order_item_type { get; set; }
-        
+        public List<Fee> fees { get; set; }
+
+        public List<Distribution> distributions { get; set; }
 
     }
 
@@ -18,10 +20,10 @@ namespace ApiHw.Models
     {
         public string name { get; set; }
         public decimal amount { get; set; }
-        public FeeType type { get; set; }
+        public string type { get; set; }
     }
 
-    public class Distributions
+    public class Distribution
     {
         public string name { get; set; }
         public decimal amount { get; set; }
