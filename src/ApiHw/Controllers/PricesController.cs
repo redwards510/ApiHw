@@ -35,7 +35,7 @@ namespace ApiHw.Controllers
                 // loop over each item in the order and calculate price
                 foreach (var orderItem in order.order_items)
                 {                    
-                    op.OrderItemPrices.Add(new OrderItemPrices { ItemName = orderItem.type, Price = LookupFee(orderItem.type, orderItem.pages) });
+                    op.OrderItemPrices.Add(new OrderItemPrices { ItemName = orderItem.type, Price = Helpers.LookupFee(orderItem.type, orderItem.pages) });
                 }
 
                 // get the overall order total
@@ -44,27 +44,6 @@ namespace ApiHw.Controllers
             }
             // .Net handles the conversion of the POCO class to JSON
             return orderPrices;
-        }
-
-        /// <summary>
-        /// Reading the fees.json on every call isn't very efficient, but it would normally be in a database anyway.. 
-        /// </summary>
-        /// <param name="itemType"></param>
-        /// <param name="pages"></param>
-        /// <returns></returns>
-        private decimal LookupFee(string itemType, int pages)
-        {
-            JsonSerializer serializer = new JsonSerializer();                        
-            using (StreamReader reader = System.IO.File.OpenText(@".\fees.json"))
-            using(JsonReader jr = new JsonTextReader(reader))
-            {
-                // read the fees.json file into our POCO object
-                List<Fees> fees = serializer.Deserialize<List<Fees>>(jr);
-                var specificType = fees.FirstOrDefault(x => x.order_item_type == itemType);
-                var flatFees = specificType.fees.Where(x => x.type == "flat").Sum(x => x.amount);
-                var perPageFees = (pages > 1) ? specificType.fees.Where(x => x.type == "per-page").Sum(x => x.amount) * (pages - 1) : 0.0m;
-                return flatFees + perPageFees;
-            }
-        }                
+        }              
     }
 }

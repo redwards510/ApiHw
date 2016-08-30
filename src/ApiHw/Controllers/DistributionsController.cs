@@ -7,6 +7,7 @@ using ApiHw.Models;
 using Newtonsoft.Json;
 using System.IO;
 
+
 namespace ApiHw.Controllers
 {
     [Route("api/Distributions")]
@@ -16,7 +17,7 @@ namespace ApiHw.Controllers
         public List<Distributions> Post([FromBody] List<Order> orders)
         {
             List<Distributions> distributions = new List<Distributions>();
-            List<Fees> fees = GetFees();
+            List<Fees> fees = Helpers.GetFees();
 
             foreach (var order in orders)
             {
@@ -42,7 +43,7 @@ namespace ApiHw.Controllers
                 decimal orderTotal = 0m;
                 foreach (var orderItem in order.order_items)
                 {
-                    orderTotal += LookupFee(orderItem.type, orderItem.pages);
+                    orderTotal += Helpers.LookupFee(orderItem.type, orderItem.pages);
                 }
 
                 // check if we need to add to the Other fund
@@ -55,37 +56,6 @@ namespace ApiHw.Controllers
                 distributions.Add(d);
             }
             return distributions;
-        }
-
-        /// <summary>
-        /// Deserialize fees.json into Fees POCO object
-        /// </summary>
-        /// <returns></returns>
-        private List<Fees> GetFees()
-        {
-            JsonSerializer serializer = new JsonSerializer();
-            using (StreamReader reader = System.IO.File.OpenText(@".\fees.json"))
-            using (JsonReader jr = new JsonTextReader(reader))
-            {
-                // read the fees.json file into our POCO object
-                List<Fees> fees = serializer.Deserialize<List<Fees>>(jr);
-                return fees;
-            }
-        }
-
-        /// <summary>
-        /// this should be refactored into a helper class so we aren't duplicating methods. 
-        /// </summary>
-        /// <param name="itemType"></param>
-        /// <param name="pages"></param>
-        /// <returns></returns>
-        private decimal LookupFee(string itemType, int pages)
-        {
-            List<Fees> fees = GetFees();
-            var specificType = fees.FirstOrDefault(x => x.order_item_type == itemType);
-            var flatFees = specificType.fees.Where(x => x.type == "flat").Sum(x => x.amount);
-            var perPageFees = (pages > 1) ? specificType.fees.Where(x => x.type == "per-page").Sum(x => x.amount) * (pages - 1) : 0.0m;
-            return flatFees + perPageFees;            
         }
     }
 }
